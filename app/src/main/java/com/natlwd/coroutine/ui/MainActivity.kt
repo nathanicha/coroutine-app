@@ -2,11 +2,11 @@ package com.natlwd.coroutine.ui
 
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
 import com.natlwd.coroutine.databinding.ActivityMainBinding
+import com.natlwd.coroutine.extensions.handleStateWithLoading
 import com.natlwd.coroutine.utils.viewBinding
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BasActivity() {
     private val binding by viewBinding(ActivityMainBinding::inflate)
     private val model: MainViewModel by viewModels()
 
@@ -14,8 +14,29 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
-        model.getUsers("1").observe(this, { users ->
-            binding.mainActivityTextView.text = users?.title
+        setupObserve()
+        setupListener()
+
+        model.getUsers("1")
+    }
+
+    private fun setupObserve() {
+        model.userLiveData.observe(this, { state ->
+            state.handleStateWithLoading(
+                this,
+                complete = {
+                    binding.mainActivityTextView.text = it?.title
+                },
+                failed = {
+                    binding.mainActivityTextView.text = it.message
+                }
+            )
         })
+    }
+
+    private fun setupListener() {
+        binding.mainActivityButton.setOnClickListener {
+            model.getUsers("2")
+        }
     }
 }
