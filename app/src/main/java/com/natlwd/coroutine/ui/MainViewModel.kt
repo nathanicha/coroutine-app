@@ -37,10 +37,10 @@ class MainViewModel : ViewModel() {
      *   https://medium.com/mobile-app-development-publication/understanding-suspend-function-of-coroutines-de26b070c5ed
      *   https://medium.com/mobile-app-development-publication/coroutine-suspend-function-when-does-it-start-suspend-or-terminate-2762cabac54e
      */
-    fun getUsers(userId: String) {
+    fun getUsers(userId: String? = null) {
         viewModelScope.launch(Dispatchers.Main) {
             _userLiveData.value = NetworkResult.Started
-            _userLiveData.value = repository.getUserSecondMethod(userId)
+            _userLiveData.value = repository.getUserParallel()
         }
     }
 }

@@ -8,9 +8,8 @@ import com.natlwd.coroutine.data.ApiClient
 import com.natlwd.coroutine.data.remote.UserService
 import com.natlwd.coroutine.model.NetworkResult
 import com.natlwd.coroutine.model.UserResponse
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import retrofit2.Response
 
 class UserRepository {
 
@@ -22,8 +21,7 @@ class UserRepository {
     private val api: UserService? =
         ApiClient(MainApplication.getContext()).getClient()?.create(UserService::class.java)
 
-    //Return with LiveData
-    suspend fun getUserFirstMethod(id: String): LiveData<NetworkResult<UserResponse?>> {
+    suspend fun getUserReturnLiveData(id: String): LiveData<NetworkResult<UserResponse?>> {
         val userLiveData = MutableLiveData<NetworkResult<UserResponse?>>()
         //Switching to BG Thread (Dispatchers.IO)
         withContext(Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
@@ -49,8 +47,7 @@ class UserRepository {
         return userLiveData
     }
 
-    //Return with data class, ViewModel should have LiveData to handle this
-    suspend fun getUserSecondMethod(id: String): NetworkResult<UserResponse?> {
+    suspend fun getUserReturnResp(id: String): NetworkResult<UserResponse?> {
         //Switching to BG Thread (Dispatchers.IO)
         return withContext(Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
             //Handling exception thrown by a coroutine
@@ -73,4 +70,48 @@ class UserRepository {
         }
     }
 
+    suspend fun getUserParallel(): NetworkResult<UserResponse?> {
+        return withContext(Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
+            NetworkResult.Failed(throwable)
+        }) {
+            try {
+                val result1 = async {
+                    api?.getUser("1")
+                }
+                val result2 = async {
+                    delay(3000)
+                    api?.getUser("2")
+                }
+
+                NetworkResult.Completed(processData(result1.await(), result2.await()))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                NetworkResult.Failed(e)
+            }
+        }
+    }
+
+    private fun processData(
+        result1: Response<UserResponse?>?,
+        result2: Response<UserResponse?>?
+    ): UserResponse {
+        return UserResponse(
+            title = "${result1?.body()?.title} && ${result2?.body()?.title}"
+        )
+    }
+
+    suspend fun getUserChain(): NetworkResult<UserResponse?> {
+        return withContext(Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
+            NetworkResult.Failed(throwable)
+        }) {
+            try {
+                val result1 = api?.getUser("1")
+                val result2 = api?.getUser(result1?.body()?.id.toString())
+                NetworkResult.Completed(result2?.body())
+            } catch (e: Exception) {
+                e.printStackTrace()
+                NetworkResult.Failed(e)
+            }
+        }
+    }
 }

@@ -17,7 +17,7 @@ class MainActivity : BasActivity() {
         setupObserve()
         setupListener()
 
-        model.getUsers("1")
+        model.getUsers()
     }
 
     private fun setupObserve() {
@@ -36,7 +36,7 @@ class MainActivity : BasActivity() {
 
     private fun setupListener() {
         binding.mainActivityButton.setOnClickListener {
-            model.getUsers("2")
+            model.getUsers()
         }
     }
 }
